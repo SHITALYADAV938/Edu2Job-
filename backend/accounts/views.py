@@ -39,6 +39,12 @@ class GoogleLoginView(APIView):
 
     def post(self, request):
         token = request.data.get("token")
+        role = request.data.get("role", "USER")  # Default to USER if not provided
+        
+        # Validate role
+        if role not in ["USER", "ADMIN"]:
+            role = "USER"  # Default to USER if invalid role provided
+        
         if not token:
             return Response(
                 {"detail": "Token missing"},
@@ -77,12 +83,19 @@ class GoogleLoginView(APIView):
         # get or create user
         user, created = User.objects.get_or_create(
             email=email,
-            defaults={"username": username},
+            defaults={"username": username, "role": role},
         )
 
         if created:
             user.is_active = True
+            # Update role if provided and user is new
+            if role in ["USER", "ADMIN"]:
+                user.role = role
             user.save()
+        else:
+            # For existing users, return a flag indicating they need to select role
+            # (though we won't change existing user's role automatically)
+            pass
 
         # Issue JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -95,7 +108,9 @@ class GoogleLoginView(APIView):
                     "id": user.id,
                     "email": user.email,
                     "username": user.username,
+                    "role": user.role,
                 },
+                "is_new_user": created,
             },
             status=status.HTTP_200_OK,
         )

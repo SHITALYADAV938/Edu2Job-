@@ -408,3 +408,9 @@ const AppliedJobsPage: React.FC = () => {
 
 export default AppliedJobsPage;
 
+
+
+
+
+
+

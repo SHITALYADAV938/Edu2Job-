@@ -4,7 +4,7 @@ import api from "../api";
 import { useAuth } from "../auth/useAuth";
 import axios from "axios";
 import { GoogleLogin } from "@react-oauth/google";
-import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react"; 
+import { Mail, Lock, ArrowRight, Loader2, GraduationCap, Shield } from "lucide-react"; 
 import "../styles/Login.css"; 
 
 const LoginPage: React.FC = () => {
@@ -14,6 +14,9 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"USER" | "ADMIN">("USER");
 
   // Helper: Handle Redirect based on Role
   const handleRedirect = (userData: any) => {
@@ -78,8 +81,26 @@ const LoginPage: React.FC = () => {
   // Google Login Logic
   const handleGoogleSuccess = async (response: any) => {
     try {
+      // Store token and show role selection modal for new users
+      setGoogleToken(response.credential);
+      setShowRoleModal(true);
+    } catch (err) {
+      console.error("Google Login Error:", err);
+      setError("Google authentication failed. Please try again.");
+    }
+  };
+
+  // Complete Google authentication with selected role
+  const completeGoogleAuth = async () => {
+    if (!googleToken) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
       const res = await api.post("/auth/google/", {
-        token: response.credential,
+        token: googleToken,
+        role: selectedRole,
       });
 
       localStorage.setItem("access", res.data.access);
@@ -88,11 +109,17 @@ const LoginPage: React.FC = () => {
       // Fetch User Details
       const me = await api.get("/auth/me/");
       setUser(me.data);
+      setShowRoleModal(false);
+      setGoogleToken(null);
       handleRedirect(me.data);
 
-    } catch (err) {
-      console.error("Google Login Error:", err);
-      setError("Google Login failed. Please try again.");
+    } catch (err: any) {
+      console.error("Google Auth Error:", err);
+      setError(err.response?.data?.detail || "Google authentication failed. Please try again.");
+      setShowRoleModal(false);
+      setGoogleToken(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,7 +138,103 @@ const LoginPage: React.FC = () => {
         <div className="form-wrapper">
           <div className="form-header">
             <h2 className="form-title">Sign In</h2>
-            <p className="form-subtitle">Enter details to access your account.</p>
+            <p className="form-subtitle">Login as Student or Admin - We'll redirect you automatically</p>
+          </div>
+
+          {/* Quick Access Buttons */}
+          <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
+            <Link 
+              to="/register?type=student" 
+              style={{ 
+                flex: 1, 
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <button
+                type="button"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'rgba(20, 184, 166, 0.15)',
+                  border: '2px solid rgba(20, 184, 166, 0.4)',
+                  borderRadius: '12px',
+                  color: '#14b8a6',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(20, 184, 166, 0.25)';
+                  e.currentTarget.style.borderColor = '#14b8a6';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(20, 184, 166, 0.15)';
+                  e.currentTarget.style.borderColor = 'rgba(20, 184, 166, 0.4)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <GraduationCap size={18} />
+                Student Signup
+              </button>
+            </Link>
+            <Link 
+              to="/register?type=admin" 
+              style={{ 
+                flex: 1, 
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <button
+                type="button"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'rgba(251, 146, 60, 0.15)',
+                  border: '2px solid rgba(251, 146, 60, 0.4)',
+                  borderRadius: '12px',
+                  color: '#fb923c',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(251, 146, 60, 0.25)';
+                  e.currentTarget.style.borderColor = '#fb923c';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(251, 146, 60, 0.15)';
+                  e.currentTarget.style.borderColor = 'rgba(251, 146, 60, 0.4)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <Shield size={18} />
+                Admin Signup
+              </button>
+            </Link>
+          </div>
+
+          <div className="divider" style={{marginBottom: '1.5rem'}}>
+            <span className="divider-text">Or Sign In</span>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -184,6 +307,178 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Role Selection Modal for Google Auth */}
+      {showRoleModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }} onClick={() => !loading && (setShowRoleModal(false), setGoogleToken(null))}>
+          <div 
+            style={{
+              background: 'rgba(30, 41, 59, 0.95)',
+              backdropFilter: 'blur(20px)',
+              padding: '2.5rem',
+              borderRadius: '20px',
+              border: '2px solid rgba(20, 184, 166, 0.3)',
+              width: '90%',
+              maxWidth: '450px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{
+              margin: '0 0 1.5rem 0',
+              fontSize: '1.75rem',
+              fontWeight: 800,
+              background: 'linear-gradient(135deg, #14b8a6 0%, #fb923c 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textAlign: 'center'
+            }}>
+              Select Your Role
+            </h2>
+            <p style={{ 
+              color: 'rgba(255, 255, 255, 0.7)', 
+              textAlign: 'center', 
+              marginBottom: '2rem',
+              fontSize: '0.95rem'
+            }}>
+              Choose whether you're signing in as a Student or Admin
+            </p>
+
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedRole("USER")}
+                style={{
+                  flex: 1,
+                  padding: '18px',
+                  background: selectedRole === "USER" 
+                    ? 'linear-gradient(135deg, #14b8a6 0%, #fb923c 100%)' 
+                    : 'rgba(30, 41, 59, 0.6)',
+                  border: `2px solid ${selectedRole === "USER" ? '#14b8a6' : 'rgba(20, 184, 166, 0.3)'}`,
+                  borderRadius: '12px',
+                  color: 'white',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: selectedRole === "USER" ? '0 4px 12px rgba(20, 184, 166, 0.3)' : 'none',
+                  opacity: loading ? 0.6 : 1
+                }}
+                disabled={loading}
+              >
+                <GraduationCap size={32} />
+                <span>Student</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRole("ADMIN")}
+                style={{
+                  flex: 1,
+                  padding: '18px',
+                  background: selectedRole === "ADMIN" 
+                    ? 'linear-gradient(135deg, #14b8a6 0%, #fb923c 100%)' 
+                    : 'rgba(30, 41, 59, 0.6)',
+                  border: `2px solid ${selectedRole === "ADMIN" ? '#14b8a6' : 'rgba(20, 184, 166, 0.3)'}`,
+                  borderRadius: '12px',
+                  color: 'white',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: selectedRole === "ADMIN" ? '0 4px 12px rgba(20, 184, 166, 0.3)' : 'none',
+                  opacity: loading ? 0.6 : 1
+                }}
+                disabled={loading}
+              >
+                <Shield size={32} />
+                <span>Admin</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  setShowRoleModal(false);
+                  setGoogleToken(null);
+                }}
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  padding: '12px 24px',
+                  background: 'transparent',
+                  border: '2px solid rgba(255,255,255,0.2)',
+                  borderRadius: '12px',
+                  color: 'rgba(255,255,255,0.8)',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={completeGoogleAuth}
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  padding: '12px 32px',
+                  background: loading
+                    ? 'rgba(100, 116, 139, 0.5)'
+                    : 'linear-gradient(135deg, #14b8a6 0%, #fb923c 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: 'white',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontWeight: 800,
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  transition: 'all 0.3s ease',
+                  boxShadow: loading ? 'none' : '0 4px 12px rgba(20, 184, 166, 0.3)'
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Continue</span>
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
