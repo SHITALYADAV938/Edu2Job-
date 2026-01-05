@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+*.pyc
+.env
+.venv
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Frontend Build
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ML Models (if large)
+*.pkl
+*.joblib
+backend/ml_models/*.pkl
+backend/predictions/model_artifacts/*.joblib
+
+# Keep model directories but ignore large files
+!backend/ml_models/
+!backend/predictions/model_artifacts/
